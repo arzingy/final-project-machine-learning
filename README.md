@@ -1,4 +1,4 @@
-# Final Project
+# Stock Market Project
 
 Team Members:
 - [Alyssa Berridge](https://github.com/A-bearr)
