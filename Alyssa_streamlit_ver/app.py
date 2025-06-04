@@ -1,4 +1,5 @@
 import streamlit as st
+import plotly.express as px
 import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
@@ -13,29 +14,39 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 # --- App Setup ---
-st.set_page_config(page_title="Next-Day Stock Predictor", layout="centered")
+st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
 
-# Dark mode toggle
-dark_mode = st.checkbox("🌗 Enable Dark Mode")
+# --- Sidebar for inputs ---
+with st.sidebar:
+    st.header("Settings")
+    dark_mode = st.checkbox("🌗 Enable Dark Mode", value=True)
+    tckr = st.text_input("🔍 Stock Ticker (e.g., AAPL, MSFT, TSLA)", value="TGT").upper()
 
+# --- Apply dark mode styles + Merriweather font ---
 st.markdown(f"""
     <style>
-        .main {{
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
+
+        html, body, [class*="css"] {{
+            font-family: 'Merriweather', serif;
             background-color: {'#1e1e1e' if dark_mode else '#f0f2f6'};
             color: {'#ffffff' if dark_mode else '#000000'};
         }}
+
         .block-container {{
             padding-top: 2rem;
             padding-bottom: 2rem;
         }}
+
         h1, h2, h3, h4, h5, h6 {{
+            font-family: 'Merriweather', serif;
+            font-weight: 700;
             color: {'#00bfff' if dark_mode else '#0066cc'};
         }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- User Input ---
-tckr = st.text_input("🔍 Enter a stock ticker (e.g., AAPL, MSFT, TSLA)", value="TGT").upper()
+
 
 if tckr:
     ticker_obj = yf.Ticker(tckr)
@@ -90,33 +101,49 @@ if st.button("🚀 Predict Price"):
         st.success(f"✅ Model Trained — R² Score: {r2:.4f}")
 
         # --- Visualization ---
-        st.subheader("📊 Actual vs Predicted High Prices")
+        st.markdown("""
+        <div style='background-color: #2b2b2b; padding: 15px; border-radius: 10px;'>
+        <h3 style='color:#00bfff; margin: 0;'>📊 Actual vs Predicted High Prices</h3>
+        </div>
+        """, unsafe_allow_html=True)
         plt.style.use("seaborn-v0_8-darkgrid" if dark_mode else "seaborn-v0_8")
-        fig1, ax1 = plt.subplots(figsize=(10, 5))
-        ax1.plot(np.arange(len(y_test)), y_test.values, label='Actual', linewidth=2)
-        ax1.plot(np.arange(len(y_test)), y_pred, label='Predicted', linestyle='--')
-        ax1.legend()
-        ax1.set_xlabel("Test Index")
-        ax1.set_ylabel("Stock Price")
-        st.pyplot(fig1)
+        df_plot = pd.DataFrame({
+        'Index': np.arange(len(y_test)),
+        'Actual': y_test.values,
+        'Predicted': y_pred })
+
+        fig1 = px.line(
+        df_plot,
+        x='Index',
+        y=['Actual', 'Predicted'],
+        labels={'value': 'Stock Price', 'Index': 'Test Index', 'variable': 'Legend'},
+        title='Actual vs Predicted High Prices'
+        )
+        st.plotly_chart(fig1, use_container_width=True)
+
 
         # --- Forecast Metrics ---
         today_price = y_pred[-2]
         tomorrow_price = y_pred[-1]
         price_change = tomorrow_price - today_price
 
-        st.subheader("🔮 Latest Forecast")
-        col1, col2 = st.columns(2)
-        col1.metric("📅 Today", f"${today_price:.2f}")
-        col2.metric("🔮 Tomorrow", f"${tomorrow_price:.2f}", f"{price_change:+.2f}")
+        st.markdown(f"""
+        <div style="
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-left: 6px solid #00bfff;
+        border-radius: 6px;
+        margin-bottom: 20px;">
+        <h4 style="color: #333; margin-top: 0;">📢 Forecast Summary</h4>
+        <p>Today: ${today_price:.2f}<br>
+        Tomorrow: ${tomorrow_price:.2f}<br>
+        Change: {price_change:+.2f}</p>
+        <p style="font-weight:bold; color: {'green' if price_change > 0 else 'red' if price_change < 0 else 'gray'};">
+        {"📈 Expecting an increase tomorrow." if price_change > 0 else "📉 Expecting a drop tomorrow." if price_change < 0 else "➖ No significant price movement expected."}
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("### 📢 Forecast Summary")
-        if price_change > 0:
-            st.success(f"📈 Expecting an increase of **${price_change:.2f}** tomorrow.")
-        elif price_change < 0:
-            st.error(f"📉 Expecting a drop of **${abs(price_change):.2f}** tomorrow.")
-        else:
-            st.info("➖ No significant price movement expected.")
 
         # --- Logging ---
         save_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -153,3 +180,7 @@ if st.button("🚀 Predict Price"):
             ax2.set_xlabel("Saved Time")
             ax2.set_ylabel("R² Score")
             st.pyplot(fig2)
+
+# --- Footer ---
+st.markdown("---")
+st.markdown("Made with ❤️ using [Streamlit](https://streamlit.io/) and [Yahoo Finance](https://finance.yahoo.com/).")
