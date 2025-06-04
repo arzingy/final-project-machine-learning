@@ -14,12 +14,17 @@ Python Libraries Used:
 
 Breakdown:
 
-
+1. The model will ask for a stock ticker, after the user enters the ticker information, all of the data from a designated start to end time will be downloaded.
+2. This information is then narrowed down to just the Price at Open, at the stock's Highest/Lowest, and the Volume of trades.
+3. The model then 
 
 
 Goals:
 
 The goal of this project is not to act as a substitute for doing research before commiting to a stock, it is to act as a tool to help the user more easily recognize patterns that have occured in the price throughout time, although the predicted values may not be identical to the actual daily high, it is a good indicator of whether the expected value of the stock will increase or decrease.
+
+Stretch Goals:
+1. 
 
 
 Team Members:
