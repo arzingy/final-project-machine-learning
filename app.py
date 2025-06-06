@@ -12,6 +12,8 @@ from sklearn.metrics import r2_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+import matplotlib.dates as mdates
+
 
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
@@ -121,6 +123,30 @@ if st.button("🚀 Predict Price"):
         )
         st.plotly_chart(fig1, use_container_width=True)
 
+                # --- Last 30 Days Comparison (Matplotlib) ---
+        st.markdown("### 📆 Last 30 Days: Actual vs Predicted High Prices")
+        last_n = 30
+        y_test_last = y_test[-last_n:]
+        y_pred_last = y_pred[-last_n:]
+
+        if isinstance(y_test.index, pd.DatetimeIndex):
+            test_dates = y_test.index[-last_n:]
+        else:
+            test_dates = pd.date_range(end=pd.Timestamp.today(), periods=last_n)
+
+        fig3, ax3 = plt.subplots(figsize=(10, 5))
+        ax3.plot(test_dates, y_test_last.values, label='Actual Price', marker='o', color='blue')
+        ax3.plot(test_dates, y_pred_last, label='Predicted Price', marker='o', color='orange')
+        ax3.set_xlabel('Date')
+        ax3.set_ylabel('Price ($)')
+        ax3.set_title(f'{tckr} — Last {last_n} Days: Actual vs Predicted')
+        ax3.legend()
+        ax3.grid(True)
+        fig3.autofmt_xdate()
+
+        st.pyplot(fig3)
+
+
 
         # --- Forecast Metrics ---
         today_price = y_pred[-2]
@@ -174,12 +200,31 @@ if st.button("🚀 Predict Price"):
             st.subheader("📅 Prediction History (Last 30)")
             st.dataframe(filtered_df.head(30))
 
-            st.subheader("📈 R² Score Over Time")
-            fig2, ax2 = plt.subplots(figsize=(10, 4))
-            ax2.plot(filtered_df['Saved'], filtered_df['R2 Score'], marker='o', color='darkblue')
-            ax2.set_xlabel("Saved Time")
-            ax2.set_ylabel("R² Score")
-            st.pyplot(fig2)
+            # Sidebar checkbox to toggle the graph
+        show_r2_graph = st.sidebar.checkbox("Show R² Score Over Time")
+
+    if show_r2_graph:
+        st.subheader("📈 R² Score Over Time")
+
+        # Convert 'Saved' to datetime (if not already)
+        filtered_df['Saved'] = pd.to_datetime(filtered_df['Saved'])
+
+        # Create the plot
+        fig3, ax3 = plt.subplots(figsize=(12, 6))
+        ax3.plot(filtered_df['Saved'], filtered_df['R2 Score'], marker='o', linestyle='-', color='darkblue')
+    
+        # Format the x-axis as datetime
+        ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
+        fig3.autofmt_xdate()
+
+        ax3.set_xlabel('Saved (Date & Time)')
+        ax3.set_ylabel('R² Score')
+        ax3.set_title('R² Score Over Time')
+        ax3.grid(True)
+
+        st.pyplot(fig3)
+
+
 
 # --- Footer ---
 st.markdown("---")
