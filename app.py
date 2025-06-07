@@ -17,42 +17,6 @@ import matplotlib.dates as mdates
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
 
-# --- Custom Page Frame and Header (left-aligned title) ---
-st.markdown(f"""
-<style>
-/* Whole page frame with pale blue-gray border */
-html, body {{
-    border: 8px solid #d0e4f5;  /* Pale blue-gray */
-    padding: 0px;
-    margin: 0px;
-}}
-
-/* Custom header bar */
-.header-bar {{
-    background-color: #2c3e50;  /* Deep navy-blue */
-    padding: 15px 25px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    border-bottom: 3px solid #d0e4f5;
-}}
-
-/* NDSP Title */
-.header-title {{
-    color: white;
-    font-size: 32px;
-    font-weight: 900;
-    font-family: 'Impact', serif;
-    padding-top: 12px;  /* Moves text down */
-}}
-</style>
-
-<!-- HTML to render header -->
-<div class='header-bar'>
-    <div class='header-title'>NDSP</div>
-</div>
-""", unsafe_allow_html=True)
-
 # --- Sidebar for inputs ---
 with st.sidebar:
     st.header("Settings")
