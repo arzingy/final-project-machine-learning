@@ -14,15 +14,53 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import matplotlib.dates as mdates
 
-
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
+
+# --- Custom Page Frame and Header (left-aligned title) ---
+st.markdown(f"""
+<style>
+/* Whole page frame with pale blue-gray border */
+html, body {{
+    border: 8px solid #d0e4f5;  /* Pale blue-gray */
+    padding: 0px;
+    margin: 0px;
+}}
+
+/* Custom header bar */
+.header-bar {{
+    background-color: #2c3e50;  /* Deep navy-blue */
+    padding: 15px 25px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    border-bottom: 3px solid #d0e4f5;
+}}
+
+/* NDSP Title */
+.header-title {{
+    color: white;
+    font-size: 32px;
+    font-weight: 900;
+    font-family: 'Impact', serif;
+    padding-top: 12px;  /* Moves text down */
+}}
+</style>
+
+<!-- HTML to render header -->
+<div class='header-bar'>
+    <div class='header-title'>NDSP</div>
+</div>
+""", unsafe_allow_html=True)
 
 # --- Sidebar for inputs ---
 with st.sidebar:
     st.header("Settings")
     dark_mode = st.checkbox("🌗 Enable Dark Mode", value=True)
     tckr = st.text_input("🔍 Stock Ticker (e.g., AAPL, MSFT, TSLA)", value="TGT").upper()
+
+    # Sidebar checkbox to toggle the R² graph
+    show_r2_graph = st.checkbox("Show R² Score Over Time")
 
 # --- Apply dark mode styles + Merriweather font ---
 st.markdown(f"""
@@ -40,14 +78,20 @@ st.markdown(f"""
             padding-bottom: 2rem;
         }}
 
-        h1, h2, h3, h4, h5, h6 {{
+        h1 {{
+            font-family: 'Merriweather', serif;
+            font-weight: 700;
+            color: {'#00bfff' if dark_mode else '#0066cc'};
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+        }}
+
+        h2, h3, h4, h5, h6 {{
             font-family: 'Merriweather', serif;
             font-weight: 700;
             color: {'#00bfff' if dark_mode else '#0066cc'};
         }}
     </style>
 """, unsafe_allow_html=True)
-
 
 
 if tckr:
@@ -97,58 +141,28 @@ if st.button("🚀 Predict Price"):
             callbacks=[early_stop, reduce_lr], verbose=0
         )
 
-        # --- Prediction and Evaluation ---
+        # --- Prediction and Evaluation R² Score Output ---
         y_pred = model.predict(X_test).flatten()
         r2 = r2_score(y_test, y_pred)
-        st.success(f"✅ Model Trained — R² Score: {r2:.4f}")
+        r2_percent = r2 * 100
 
-        # --- Visualization ---
-        st.markdown("""
-        <div style='background-color: #2b2b2b; padding: 15px; border-radius: 10px;'>
-        <h3 style='color:#00bfff; margin: 0;'>📊 Actual vs Predicted High Prices</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        plt.style.use("seaborn-v0_8-darkgrid" if dark_mode else "seaborn-v0_8")
-        df_plot = pd.DataFrame({
-        'Index': np.arange(len(y_test)),
-        'Actual': y_test.values,
-        'Predicted': y_pred })
-
-        fig1 = px.line(
-        df_plot,
-        x='Index',
-        y=['Actual', 'Predicted'],
-        labels={'value': 'Stock Price', 'Index': 'Test Index', 'variable': 'Legend'},
-        title='Actual vs Predicted High Prices'
-        )
-        st.plotly_chart(fig1, use_container_width=True)
-
-                # --- Last 30 Days Comparison (Matplotlib) ---
-        st.markdown("### 📆 Last 30 Days: Actual vs Predicted High Prices")
-        last_n = 30
-        y_test_last = y_test[-last_n:]
-        y_pred_last = y_pred[-last_n:]
-
-        if isinstance(y_test.index, pd.DatetimeIndex):
-            test_dates = y_test.index[-last_n:]
+        if r2_percent >= 80:
+            st.success(f"✅ Model Trained Accuracy Score: {r2_percent:.2f}%")
         else:
-            test_dates = pd.date_range(end=pd.Timestamp.today(), periods=last_n)
+            st.markdown(f"""
+            <div style="
+                background-color: #ffe6e6;
+                color: #990000;
+                padding: 15px;
+                border-left: 6px solid #ff4d4d;
+                border-radius: 6px;
+                margin-bottom: 20px;">
+                <strong>❌ Model Accuracy Below Target:</strong><br>
+                Accuracy Score: {r2_percent:.2f}%
+            </div>
+            """, unsafe_allow_html=True)
 
-        fig3, ax3 = plt.subplots(figsize=(10, 5))
-        ax3.plot(test_dates, y_test_last.values, label='Actual Price', marker='o', color='blue')
-        ax3.plot(test_dates, y_pred_last, label='Predicted Price', marker='o', color='orange')
-        ax3.set_xlabel('Date')
-        ax3.set_ylabel('Price ($)')
-        ax3.set_title(f'{tckr} — Last {last_n} Days: Actual vs Predicted')
-        ax3.legend()
-        ax3.grid(True)
-        fig3.autofmt_xdate()
-
-        st.pyplot(fig3)
-
-
-
-        # --- Forecast Metrics ---
+        # --- Forecast Summary Metrics output---
         today_price = y_pred[-2]
         tomorrow_price = y_pred[-1]
         price_change = tomorrow_price - today_price
@@ -170,8 +184,98 @@ if st.button("🚀 Predict Price"):
         </div>
         """, unsafe_allow_html=True)
 
+        # --- Actual vs Predicted High Prices Visualization ---
+        st.markdown("""
+        <div style='
+            background-color: rgba(128, 128, 128, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.3);'>
+        <h3 style='color:#004080; margin: 0;'>📊 Actual vs Predicted High Prices</h3>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # --- Logging ---
+        plt.style.use("seaborn-v0_8-darkgrid" if dark_mode else "seaborn-v0_8")
+
+        df_plot = pd.DataFrame({
+            'Index': np.arange(len(y_test)),
+            'Actual': y_test.values,
+            'Predicted': y_pred
+        })
+
+        fig1 = px.line(
+            df_plot,
+            x='Index',
+            y=['Actual', 'Predicted'],
+            labels={'value': 'Stock Price', 'Index': 'Test Index', 'variable': 'Legend'},
+            title='Actual vs Predicted High Prices',
+            color_discrete_map={
+                'Actual': '#1f77b4',        # default plotly blue
+                'Predicted': "#ccabda"      # pale purple
+            }
+        )
+
+        st.plotly_chart(fig1, use_container_width=True)
+          
+        # --- Visualization: Last 30 Days ---
+        st.markdown("""
+        <div style='
+            background-color: rgba(128, 128, 128, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.3);'>
+        <h3 style='color:#004080; margin: 0;'>📊 Actual vs Predicted High Prices (Last 30 Days)</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Slice last 30 values
+        last_n = 30
+        y_test_last = y_test[-last_n:]
+        y_pred_last = y_pred[-last_n:]
+
+        # Build DataFrame using real dates
+        df_plot = pd.DataFrame({
+            'Date': y_test_last.index,
+            'Actual': y_test_last.values,
+            'Predicted': y_pred_last
+        })
+
+        # Plotly line chart
+        fig1 = px.line(
+            df_plot,
+            x='Date',
+            y=['Actual', 'Predicted'],
+            labels={'value': 'Stock Price ($)', 'Date': 'Date', 'variable': 'Legend'},
+            title='Actual vs Predicted High Prices (Last 30 Days)',
+            color_discrete_map={
+                'Actual': "#390655",     
+                'Predicted': "#8ad7ee"   
+            }
+        )
+
+        # Add interactivity
+        fig1.update_traces(
+            mode='lines+markers',
+            marker=dict(size=6),
+            hovertemplate='%{y:.2f}'
+        )
+
+        fig1.update_layout(
+            xaxis=dict(
+                title='Date',
+                rangeslider=dict(visible=True),
+                tickformat='%b %d',
+            ),
+            yaxis_title='Stock Price ($)',
+            hovermode='x unified',
+            plot_bgcolor='#1e1e1e' if dark_mode else '#ffffff',
+            paper_bgcolor='#1e1e1e' if dark_mode else '#ffffff',
+            font=dict(color='white' if dark_mode else 'black')
+        )
+
+        st.plotly_chart(fig1, use_container_width=True)
+
+        # --- Logging Prediction ---
         save_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         result_df = pd.DataFrame({
             'Ticker': [tckr],
@@ -197,34 +301,43 @@ if st.button("🚀 Predict Price"):
             df_log['Saved'] = pd.to_datetime(df_log['Saved'])
             filtered_df = df_log[df_log['Ticker'] == tckr].sort_values(by='Saved', ascending=False)
 
-            st.subheader("📅 Prediction History (Last 30)")
-            st.dataframe(filtered_df.head(30))
+            st.markdown("""
+            <div style="text-align: center; padding-top: 10px;">
+                <h3 style="color:#004080;">📅 Prediction History (Last 30)</h3>
+            </div>
+            """, unsafe_allow_html=True)
 
-            # Sidebar checkbox to toggle the graph
-        show_r2_graph = st.sidebar.checkbox("Show R² Score Over Time")
+            # Center the dataframe using a container with fixed width and horizontal margins
+            st.markdown("""
+            <div style="display: flex; justify-content: center;">
+                <div style="width: 80%;">
+            """, unsafe_allow_html=True)
 
-    if show_r2_graph:
-        st.subheader("📈 R² Score Over Time")
+            st.dataframe(filtered_df.head(30), use_container_width=True)
 
-        # Convert 'Saved' to datetime (if not already)
-        filtered_df['Saved'] = pd.to_datetime(filtered_df['Saved'])
-
-        # Create the plot
-        fig3, ax3 = plt.subplots(figsize=(12, 6))
-        ax3.plot(filtered_df['Saved'], filtered_df['R2 Score'], marker='o', linestyle='-', color='darkblue')
-    
-        # Format the x-axis as datetime
-        ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
-        fig3.autofmt_xdate()
-
-        ax3.set_xlabel('Saved (Date & Time)')
-        ax3.set_ylabel('R² Score')
-        ax3.set_title('R² Score Over Time')
-        ax3.grid(True)
-
-        st.pyplot(fig3)
+            st.markdown("""
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 
+            if show_r2_graph:
+                st.subheader("📈 R² Score Over Time")
+
+                # Create the plot
+                fig3, ax3 = plt.subplots(figsize=(12, 6))
+                ax3.plot(filtered_df['Saved'], filtered_df['R2 Score'], marker='o', linestyle='-', color='darkblue')
+            
+                # Format the x-axis as datetime
+                ax3.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S'))
+                fig3.autofmt_xdate()
+
+                ax3.set_xlabel('Saved (Date & Time)')
+                ax3.set_ylabel('R² Score')
+                ax3.set_title('R² Score Over Time')
+                ax3.grid(True)
+
+                st.pyplot(fig3)
 
 # --- Footer ---
 st.markdown("---")
