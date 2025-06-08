@@ -1,3 +1,4 @@
+#Dependancies 
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -13,15 +14,28 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import matplotlib.dates as mdates
-
 import seaborn as sns
 from datetime import timedelta
+
+# For sentiment tab
+import feedparser
+from newspaper import Article
+from transformers import pipeline
+from collections import Counter
+from dateutil import parser
+import nltk
+
+nltk.download('punkt')
 
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
 
 # --- Tabs Setup ---
-tab1, tab2 = st.tabs(["Next-Day Stock Predictor", "Monte Carlo Simulation (Coming Soon)"])
+tab1, tab2, tab3 = st.tabs([
+    "Next-Day Stock Predictor", 
+    "Monte Carlo Simulation (Coming Soon)",
+    "Market Sentiment (Coming Soon)"
+])
 
 with tab1:
     # --- Sidebar for inputs ---
@@ -377,3 +391,108 @@ with tab2:
     if ticker_mc:
         with st.spinner("Running Monte Carlo simulations..."):
             monte_carlo(ticker_mc, num_simulations=num_simulations)
+
+
+# ---------------------------------------------------
+# --- Tab 3: Article Market Sentiment ---
+# ---------------------------------------------------
+
+with tab3:
+    st.header("📰 Market Sentiment Analysis from News Headlines")
+
+    # Load Sentiment Model (once per session)
+    @st.cache_resource
+    def load_sentiment_model():
+        return pipeline("sentiment-analysis")
+    
+    sentiment_model = load_sentiment_model()
+
+    # RSS Feeds
+    rss_feeds = {
+        "Reuters": "https://feeds.reuters.com/reuters/businessNews",
+        "Yahoo Finance": "https://finance.yahoo.com/news/rssindex",
+        "MarketWatch": "https://feeds.marketwatch.com/marketwatch/topstories/",
+        "CNBC": "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+    }
+
+    # Helper Functions
+    def fetch_articles(feed_url, limit=5):
+        feed = feedparser.parse(feed_url)
+        return feed.entries[:limit]
+
+    def extract_article_text(url):
+        try:
+            article = Article(url)
+            article.download()
+            article.parse()
+            return article.text
+        except:
+            return ""
+
+    def analyze_full_article(text):
+        chunk_size = 1024
+        sentiments = []
+        for i in range(0, len(text), chunk_size):
+            chunk = text[i:i+chunk_size]
+            if len(chunk.strip()) < 20:
+                continue
+            result = sentiment_model(chunk)[0]
+            sentiments.append(result['label'].upper())
+        if not sentiments:
+            return "NEUTRAL", 0
+        counts = Counter(sentiments)
+        label = counts.most_common(1)[0][0]
+        confidence = round(counts[label] / len(sentiments), 3)
+        return label, confidence
+
+    def plot_sentiment_bar(sentiment_counts):
+        negative = sentiment_counts.get("NEGATIVE", 0)
+        neutral = sentiment_counts.get("NEUTRAL", 0)
+        positive = sentiment_counts.get("POSITIVE", 0)
+        total = negative + neutral + positive
+        if total == 0:
+            st.write("No sentiment data to plot.")
+            return
+        labels = ['Negative', 'Neutral', 'Positive']
+        values = [negative, neutral, positive]
+        colors = ['#FF4B4B', '#CCCCCC', '#28A745']
+        fig, ax = plt.subplots(figsize=(8, 1.5))
+        left = 0
+        for v, c, l in zip(values, colors, labels):
+            ax.barh(0, v, left=left, color=c, edgecolor='black')
+            if v > 0:
+                ax.text(left + v/2, 0, f"{l}: {v}", ha='center', va='center', fontsize=9, color='white')
+            left += v
+        ax.set_yticks([])
+        ax.set_xlim(0, total)
+        ax.set_title("Market Sentiment Summary", fontsize=12)
+        plt.box(False)
+        st.pyplot(fig)
+
+    # UI
+    if st.button("🧠 Analyze Market Mood"):
+        with st.spinner("Analyzing headlines from top financial sources..."):
+            total_counts = {"POSITIVE": 0, "NEGATIVE": 0, "NEUTRAL": 0}
+
+            for source, url in rss_feeds.items():
+                entries = fetch_articles(url)
+                for entry in entries:
+                    article_text = extract_article_text(entry.link)
+                    if not article_text:
+                        continue
+                    label, _ = analyze_full_article(article_text)
+                    total_counts[label] += 1
+
+            total = sum(total_counts.values())
+            if total == 0:
+                st.warning("No articles could be analyzed.")
+            else:
+                dominant = max(total_counts, key=total_counts.get)
+                label_map = {
+                    "POSITIVE": "🔥 Hot Market",
+                    "NEGATIVE": "🥶 Cold Market",
+                    "NEUTRAL": "😐 Lukewarm Market"
+                }
+                st.markdown(f"### {label_map[dominant]}")
+                st.caption(f"Based on {total} financial news articles today.")
+                plot_sentiment_bar(total_counts)
