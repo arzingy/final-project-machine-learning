@@ -400,7 +400,7 @@ with tab2:
 
             for sim in range(num_simulations):
                 price_series = np.zeros(t)
-                price_series[0] = last_price
+                price_series[0] = float(last_price.iloc[0])
                 for i in range(1, t):
                     price_series[i] = price_series[i - 1] * np.exp(np.random.normal(mean_return, volatility))
                 simulations[sim, :] = price_series
