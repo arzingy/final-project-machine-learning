@@ -14,6 +14,9 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import matplotlib.dates as mdates
 
+import seaborn as sns
+from datetime import timedelta
+
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
 
@@ -60,7 +63,6 @@ with tab1:
             }}
         </style>
     """, unsafe_allow_html=True)
-
 
     if tckr:
         ticker_obj = yf.Ticker(tckr)
@@ -178,8 +180,8 @@ with tab1:
                 labels={'value': 'Stock Price', 'Index': 'Test Index', 'variable': 'Legend'},
                 title='Actual vs Predicted High Prices',
                 color_discrete_map={
-                    'Actual': '#1f77b4',        # default plotly blue
-                    'Predicted': "#ccabda"      # pale purple
+                    'Actual': '#1f77b4',
+                    'Predicted': "#ccabda"
                 }
             )
 
@@ -196,20 +198,16 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
             
-
-            # Slice last 30 values
             last_n = 30
             y_test_last = y_test[-last_n:]
             y_pred_last = y_pred[-last_n:]
 
-            # Build DataFrame using real dates
             df_plot = pd.DataFrame({
                 'Date': y_test_last.index,
                 'Actual': y_test_last.values,
                 'Predicted': y_pred_last
             })
 
-            # Plotly line chart
             fig1 = px.line(
                 df_plot,
                 x='Date',
@@ -217,12 +215,11 @@ with tab1:
                 labels={'value': 'Stock Price ($)', 'Date': 'Date', 'variable': 'Legend'},
                 title='Actual vs Predicted High Prices (Last 30 Days)',
                 color_discrete_map={
-                    'Actual': "#390655",     
-                    'Predicted': "#8ad7ee"   
+                    'Actual': "#390655",
+                    'Predicted': "#8ad7ee"
                 }
             )
 
-            # Add interactivity
             fig1.update_traces(
                 mode='lines+markers',
                 marker=dict(size=6),
@@ -276,7 +273,6 @@ with tab1:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Center the dataframe using a container with fixed width and horizontal margins
                 st.markdown("""
                 <div style="display: flex; justify-content: center;">
                     <div style="width: 80%;">
@@ -289,9 +285,95 @@ with tab1:
                 </div>
                 """, unsafe_allow_html=True)
 
-
                 if show_r2_graph:
                     st.subheader("📈 R² Score Over Time")
-
-                    # Create the plot
                     fig3, ax3 = plt.subplots(figsize=(12, 6))
+                    ax3.plot(filtered_df['Saved'], filtered_df['R2 Score'], marker='o')
+                    ax3.set_title(f"R² Score Over Time for {tckr}")
+                    ax3.set_xlabel("Date")
+                    ax3.set_ylabel("R² Score")
+                    plt.xticks(rotation=45)
+                    st.pyplot(fig3)
+
+# ---------------------------------------------------
+# --- Tab 2: Monte Carlo Simulation code below ---
+# ---------------------------------------------------
+
+with tab2:
+
+    st.header("Monte Carlo Simulation of Stock Prices")
+
+    # Input ticker in tab 2
+    ticker_mc = st.text_input("Enter Stock Ticker for Monte Carlo Simulation:", value="TGT").upper()
+
+    num_simulations = st.slider("Number of simulations:", 100, 5000, 1000, 100)
+
+    def plot_histogram(simulations, ticker, t):
+        final_prices = simulations[:, -1]  # Extract final prices from all simulations
+
+        prediction_date = (datetime.today() + timedelta(days=t)).strftime("%B %d, %Y")
+
+        p5, p50, p95 = np.percentile(final_prices, [5, 50, 95])
+
+        st.write(f"Monte Carlo Simulation for {ticker} - Projected Price on {prediction_date}:")
+        st.write(f"5th Percentile (Low Risk Estimate): ${p5:.2f}")
+        st.write(f"Median Price (Most Likely Outcome): ${p50:.2f}")
+        st.write(f"95th Percentile (High Reward Estimate): ${p95:.2f}")
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.histplot(final_prices, bins=50, kde=True, color="blue", alpha=0.6, ax=ax)
+
+        ax.axvline(p5, color="red", linestyle="dashed", label="5th Percentile (Low Risk)")
+        ax.axvline(p50, color="black", linestyle="dashed", label="Median Price (Most Likely Outcome)")
+        ax.axvline(p95, color="green", linestyle="dashed", label="95th Percentile (High Reward)")
+
+        ax.set_title(f"Probability Distribution of {ticker} Stock Price Over {t} Days ({prediction_date})")
+        ax.set_xlabel("Projected Stock Price, $")
+        ax.set_ylabel("Frequency")
+        ax.legend()
+
+        st.pyplot(fig)
+
+    def plot_paths(simulations, historical_prices, ticker, t):
+        fig, ax = plt.subplots(figsize=(12, 6))
+
+        ax.plot(simulations.T, alpha=0.05, color="blue")
+
+        ax.plot(range(len(historical_prices)), historical_prices, color="red", linewidth=2,
+                label=f"Historical trajectory for last {t} days")
+
+        ax.set_title(f"Monte Carlo Simulation with Trends for {ticker} Over {t} Days")
+        ax.set_xlabel("Days")
+        ax.set_ylabel("Projected Stock Price, $")
+        ax.legend()
+
+        st.pyplot(fig)
+
+    def monte_carlo(ticker, num_simulations=1000):
+        stock_data = yf.download(ticker, start='2020-01-01', end='2025-12-31')
+        stock_data["Returns"] = np.log(stock_data["Close"] / stock_data["Close"].shift(1))
+
+        mean_return = stock_data["Returns"].mean()
+        volatility = stock_data["Returns"].std()
+        last_price = stock_data["Close"].iloc[-1]
+
+        time_frames = [7, 30, 90, 180, 365]
+
+        for t in time_frames:
+            simulations = np.zeros((num_simulations, t))
+
+            for sim in range(num_simulations):
+                price_series = np.zeros(t)
+                price_series[0] = last_price
+                for i in range(1, t):
+                    price_series[i] = price_series[i - 1] * np.exp(np.random.normal(mean_return, volatility))
+                simulations[sim, :] = price_series
+
+            historical_prices = stock_data["Close"][-t:]
+            st.subheader(f"Simulation over {t} days:")
+            plot_histogram(simulations, ticker, t)
+            plot_paths(simulations, historical_prices, ticker, t)
+
+    if ticker_mc:
+        with st.spinner("Running Monte Carlo simulations..."):
+            monte_carlo(ticker_mc, num_simulations=num_simulations)
