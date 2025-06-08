@@ -496,3 +496,26 @@ with tab3:
                 st.markdown(f"### {label_map[dominant]}")
                 st.caption(f"Based on {total} financial news articles today.")
                 plot_sentiment_bar(total_counts)
+                
+            headlines = []
+
+            for source, url in rss_feeds.items():
+                entries = fetch_articles(url)
+                for entry in entries:
+                    article_text = extract_article_text(entry.link)
+                    if not article_text:
+                        continue
+                    label, confidence = analyze_full_article(article_text)
+                    total_counts[label] += 1
+                    headlines.append((entry.title, label.title(), entry.link))
+
+            # Sort headlines by sentiment
+            sentiment_colors = {
+                "Positive": "green",
+                "Neutral": "gray",
+                "Negative": "red"
+            }
+
+            st.markdown("### 🗞️ Latest Headlines & Sentiment")
+            for title, label, link in headlines:
+                st.markdown(f"<span style='color:{sentiment_colors[label]}; font-weight:bold'>{label}</span>: <a href='{link}' target='_blank'>{title}</a>", unsafe_allow_html=True)
