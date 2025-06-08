@@ -30,6 +30,27 @@ nltk.download('punkt')
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
 
+# --- Tab header---
+st.markdown("""
+    <div style="padding-top: 40px;"></div>
+
+    <div style="
+        background: linear-gradient(135deg, #007BFF, #0056b3);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+    ">
+        <h1 style="color: white; margin: 0; font-size: 28px;">
+             Welcome to Your Financial Toolbox 🧰
+        </h1>
+        <p style="color: white; font-size: 16px; margin-top: 5px;">
+            Explore predictions, simulations, and market sentiment tools.
+        </p>
+    </div>
+""", unsafe_allow_html=True)
+
+
 # --- Tabs Setup ---
 tab1, tab2, tab3 = st.tabs([
     "Next-Day Stock Predictor", 
@@ -38,16 +59,17 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 with tab1:
-    # --- Sidebar for inputs ---
+# --- Sidebar for inputs ---
     with st.sidebar:
         st.header("Settings")
-        dark_mode = st.checkbox("🌗 Enable Dark Mode", value=True)
+        dark_mode = False  # Set to True to force dark mode
         tckr = st.text_input("🔍 Stock Ticker (e.g., AAPL, MSFT, TSLA)", value="TGT").upper()
 
         # Sidebar checkbox to toggle the R² graph
         show_r2_graph = st.checkbox("Show R² Score Over Time")
+        
 
-    # --- Apply dark mode styles + Merriweather font ---
+# --- Apply dark mode styles + Merriweather font ---
     st.markdown(f"""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
@@ -87,7 +109,7 @@ with tab1:
             st.image(logo_url, width=100)
 
         st.title(f"📈 {company_name} ({tckr}) — Next-Day Stock Price Predictor")
-        st.caption("A neural network model to forecast the *next day's high price* for any S&P 500 stock.")
+        st.caption("A neural network model to forecast the *next day's high price* for any S&P 500 stock. ⚠️ Please Read Disclaimer in the sideabar before use")
 
     if st.button("🚀 Predict Price"):
         with st.spinner("⏳ Downloading data and training model..."):
@@ -315,7 +337,7 @@ with tab1:
 
 with tab2:
 
-    st.header("Monte Carlo Simulation of Stock Prices")
+    st.header("Tomorrow's Tomorrow")
 
     # Input ticker in tab 2
     ticker_mc = st.text_input("Enter Stock Ticker for Monte Carlo Simulation:", value="TGT").upper()
@@ -398,7 +420,7 @@ with tab2:
 # ---------------------------------------------------
 
 with tab3:
-    st.header("📰 Market Sentiment Analysis from News Headlines")
+    st.header("📰 The VIBE of the day 😎")
 
     # Load Sentiment Model (once per session)
     @st.cache_resource
@@ -455,7 +477,7 @@ with tab3:
             return
         labels = ['Negative', 'Neutral', 'Positive']
         values = [negative, neutral, positive]
-        colors = ['#FF4B4B', '#CCCCCC', '#28A745']
+        colors = ["#690606", '#CCCCCC', "#3ADD28"]
         fig, ax = plt.subplots(figsize=(8, 1.5))
         left = 0
         for v, c, l in zip(values, colors, labels):
@@ -465,7 +487,7 @@ with tab3:
             left += v
         ax.set_yticks([])
         ax.set_xlim(0, total)
-        ax.set_title("Market Sentiment Summary", fontsize=12)
+        ax.set_title("Mood Distribution", fontsize=12)
         plt.box(False)
         st.pyplot(fig)
 
