@@ -54,20 +54,27 @@ st.markdown("""
 # --- Tabs Setup ---
 tab1, tab2, tab3 = st.tabs([
     "Next-Day Stock Predictor", 
-    "Monte Carlo Simulation (Coming Soon)",
-    "Market Sentiment (Coming Soon)"
+    "Monte Carlo Simulation",
+    "Market Sentiment"
 ])
 
 with tab1:
 # --- Sidebar for inputs ---
     with st.sidebar:
         st.header("Settings")
-        dark_mode = False  # Set to True to force dark mode
+        dark_mode = False
         tckr = st.text_input("🔍 Stock Ticker (e.g., AAPL, MSFT, TSLA)", value="TGT").upper()
-
-        # Sidebar checkbox to toggle the R² graph
         show_r2_graph = st.checkbox("Show R² Score Over Time")
-        
+
+        # ⚠️ Add disclaimer here
+        st.markdown("""
+        <hr style='margin-top: 20px; margin-bottom: 10px;'>
+        <p style='font-size: 14px; color: gray;'>
+        ⚠️ **Please Read Disclaimer Before Use**   
+        <br><br>
+        This site serves as an informational tool ONLY. It does not serve the purpose of giving personal or financial advice of any kind. Make investments at your own risk. All investing comes with a degree of risk. That includes the possible risk of Loss (Financial loss). Creators/contributors of this site are not responsible for any loss or actions taken by the user. Actions and consequences remain the full responsibility of the user.
+        </p>
+        """, unsafe_allow_html=True)    
 
 # --- Apply dark mode styles + Merriweather font ---
     st.markdown(f"""
@@ -109,7 +116,9 @@ with tab1:
             st.image(logo_url, width=100)
 
         st.title(f"📈 {company_name} ({tckr}) — Next-Day Stock Price Predictor")
-        st.caption("A neural network model to forecast the *next day's high price* for any S&P 500 stock. ⚠️ Please Read Disclaimer in the sideabar before use")
+        st.caption("A neural network model to forecast the *next day's high price* for any S&P 500 stock.")
+        st.markdown("**⚠️ Please Read Disclaimer Before Use**")
+
 
     if st.button("🚀 Predict Price"):
         with st.spinner("⏳ Downloading data and training model..."):
@@ -337,8 +346,16 @@ with tab1:
 
 with tab2:
 
-    st.header("Tomorrow's Tomorrow")
-
+    st.markdown("""
+    <h2 style='
+        color: #0066cc;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        font-family: Merriweather, serif;
+        margin-bottom: 1rem;'>
+        In it for the Long Haul? 🧐
+    </h2>
+    """, unsafe_allow_html=True)
+    
     # Input ticker in tab 2
     ticker_mc = st.text_input("Enter Stock Ticker for Monte Carlo Simulation:", value="TGT").upper()
 
@@ -420,7 +437,16 @@ with tab2:
 # ---------------------------------------------------
 
 with tab3:
-    st.header("📰 The VIBE of the day 😎")
+
+    st.markdown("""
+    <h2 style='
+        color: #0066cc;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        font-family: Merriweather, serif;
+        margin-bottom: 1rem;'>
+        📰 The VIBE of the day 😎
+    </h2>
+    """, unsafe_allow_html=True)
 
     # Load Sentiment Model (once per session)
     @st.cache_resource
