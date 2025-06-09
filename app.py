@@ -6,7 +6,8 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from datetime import datetime
+import sqlite3
+from datetime import datetime, timedelta
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
@@ -15,7 +16,6 @@ from tensorflow.keras.layers import Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import matplotlib.dates as mdates
 import seaborn as sns
-from datetime import timedelta
 
 # --- For sentiment tab ---
 import feedparser
@@ -25,7 +25,9 @@ from collections import Counter
 from dateutil import parser
 import nltk
 
-nltk.download('punkt')
+nltk_path = os.path.join(nltk.data.find("tokenizers"), "punkt")
+if not os.path.exists(nltk_path):
+    nltk.download("punkt")
 
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
@@ -131,6 +133,20 @@ with tab1:
             df = yf.download(tckr, start='2020-01-01', end='2025-12-31')
             df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
             df['Next_High'] = df['High'].shift(-1).fillna(df['Close'])
+
+            # --- SQLite Database Setup ---
+            conn = sqlite3.connect('stock_data.sqlite')
+            c = conn.cursor()
+            c.execute(''' CREATE TABLE IF NOT EXISTS stock_data (
+                      Date TEXT,
+                      Open REAL,
+                      High Real,
+                      Low REAL,
+                      Close Real,
+                      Volume INTEGER,
+                      Next_High REAL) ''')
+            df.to_sql('stock_data', conn, if_exists='replace', index=False)
+            conn.close()
 
             X = df[['Open', 'High', 'Low', 'Close', 'Volume']]
             y = df['Next_High']
