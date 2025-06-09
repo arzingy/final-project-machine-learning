@@ -51,10 +51,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Tabs Setup ---
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "Next-Day Stock Predictor", 
-    "Monte Carlo Simulation",
-    "Market Sentiment"
+    "Monte Carlo Simulation", 
+    "Market Sentiment", 
+    "Glossary"
 ])
 
 with tab1:
@@ -570,3 +571,53 @@ with tab3:
             st.markdown("### 🗞️ Latest Headlines & Sentiment")
             for title, label, link in headlines:
                 st.markdown(f"<span style='color:{sentiment_colors[label]}; font-weight:bold'>{label}</span>: <a href='{link}' target='_blank'>{title}</a>", unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# --- Tab 4 : Glossary---
+# ---------------------------------------------------
+
+with tab4:
+    st.markdown("""
+        <h2 style='color: #0066cc; font-family: Merriweather, serif;'>📘 Investment Glossary</h2>
+        <p style='font-size: 14px; color: gray;'>
+        This glossary is for informational and educational purposes only. It does not constitute financial advice.
+        </p>
+        <hr>
+        
+        <h3>🏦 Types of Investments</h3>
+        <ul>
+        <li><b>📊 Stock:</b> A share in a company. You can earn dividends, vote on company matters, and try to profit via capital gains.</li>
+        <li><b>🔤 Stock Ticker:</b> A short code for a company’s stock (e.g., AAPL = Apple).</li>
+        <li><b>📈 S&P 500:</b> Index of 500 major U.S. companies, used to track market performance.</li>
+        <li><b>🧾 Bond:</b> A loan to a company or government. You earn interest; principal is paid back later.</li>
+        <li><b>💽 CD (Certificate of Deposit):</b> A savings product with fixed interest and time lock.</li>
+        <li><b>💵 Savings Account:</b> Low-risk, interest-bearing account insured by the FDIC up to certain limits.</li>
+        </ul>
+
+        <h3>🧠 Tools & Models for Market Analysis</h3>
+        <ul>
+        <li><b>🧠 Neural Network Model:</b> Machine learning model trained on past data to predict outcomes.</li>
+        <li><b>🎲 Monte Carlo Simulation:</b> Uses random sampling to model uncertainty and project future prices.</li>
+        <li><b>📢 Market Sentiment:</b> Mood of investors, influenced by news and events.</li>
+        </ul>
+
+        <h3>💼 Investment Strategies & Terms</h3>
+        <ul>
+        <li><b>📅 Dollar-Cost Averaging:</b> Investing the same amount at regular intervals to spread out risk.</li>
+        <li><b>🧘 Long-Term Investing:</b> Holding investments for years or decades.</li>
+        <li><b>💼 Day Trading:</b> Buying and selling on the same day — very risky and not for beginners.</li>
+        <li><b>📉 Shorting a Stock:</b> Selling borrowed stock hoping the price drops — very risky if it rises instead.</li>
+        </ul>
+
+        <h3>🏁 Retirement & Tax-Advantaged Accounts</h3>
+        <ul>
+        <li><b>🏦 IRA:</b> Tax-deferred retirement savings account.</li>
+        <li><b>🌱 Roth IRA:</b> Retirement account with tax-free withdrawals (after-tax contributions).</li>
+        </ul>
+
+        <h3>🧰 Platforms & Resources</h3>
+        <ul>
+        <li><b>📱 Apps:</b> Robinhood, Public, Fidelity, Schwab, Acorns, SoFi Invest (do your own research).</li>
+        <li><b>📚 Sites:</b> Investopedia, NerdWallet, The Motley Fool, Morningstar, Yahoo Finance, Investor.gov</li>
+        </ul>
+    """, unsafe_allow_html=True)
