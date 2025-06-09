@@ -1,4 +1,4 @@
-#Dependancies 
+# --- Dependancies ---
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -17,7 +17,7 @@ import matplotlib.dates as mdates
 import seaborn as sns
 from datetime import timedelta
 
-# For sentiment tab
+# --- For sentiment tab ---
 import feedparser
 from newspaper import Article
 from transformers import pipeline
@@ -29,6 +29,13 @@ nltk.download('punkt')
 
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
+
+# --- Color scheme ---
+[theme]
+primaryColor="#a660c9"
+backgroundColor="#f8f9f8"
+secondaryBackgroundColor="#b0d6e4"
+textColor="#555c6b"
 
 # --- Tab header---
 st.markdown("""
@@ -50,7 +57,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-
 # --- Tabs Setup ---
 tab1, tab2, tab3 = st.tabs([
     "Next-Day Stock Predictor", 
@@ -59,6 +65,7 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 with tab1:
+
 # --- Sidebar for inputs ---
     with st.sidebar:
         st.header("Settings")
@@ -76,7 +83,10 @@ with tab1:
         </p>
         """, unsafe_allow_html=True)    
 
-# --- Apply dark mode styles + Merriweather font ---
+# ---------------------------------------------------
+# --- Tab 1 : Next day stock predictor below---
+# ---------------------------------------------------
+# ---  Merriweather font ---
     st.markdown(f"""
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
