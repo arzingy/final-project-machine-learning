@@ -30,13 +30,6 @@ nltk.download('punkt')
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
 
-# --- Color scheme ---
-[theme]
-primaryColor="#a660c9"
-backgroundColor="#f8f9f8"
-secondaryBackgroundColor="#b0d6e4"
-textColor="#555c6b"
-
 # --- Tab header---
 st.markdown("""
     <div style="padding-top: 40px;"></div>
