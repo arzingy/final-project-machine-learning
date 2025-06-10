@@ -25,9 +25,7 @@ from collections import Counter
 from dateutil import parser
 import nltk
 
-nltk_path = os.path.join(nltk.data.find("tokenizers"), "punkt")
-if not os.path.exists(nltk_path):
-    nltk.download("punkt")
+#nltk.download("punkt")
 
 # --- App Setup ---
 st.set_page_config(page_title="Next-Day Stock Predictor", layout="wide")
